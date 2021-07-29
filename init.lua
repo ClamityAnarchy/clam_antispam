@@ -5,6 +5,8 @@ local spam_warnings = 3 -- warn this many times before taking action
 local msg_count = {}
 local first_msg = {}
 local spam_warn = {}
+clam_antispam = {}
+clam_antispam.muted = {}
 
 
 --This is a statistic generated from historic clamity chat. the key is the amount of messages and the value is the shortest time anyone has taken to say that many messages ( this list was provided by anon5 )
@@ -54,6 +56,7 @@ local function process_msg(name,message)
 	if et > msg_cap[#msg_cap] then 
 		msg_count[name] = 1
 		spam_warn[name] = 1
+		clam_antispam.muted[name] = nil
 	end
 		
 	--kick the player when they said more messages than on the list within the max time
@@ -68,6 +71,7 @@ local function process_msg(name,message)
 		
 		 --if the player has been warned sufficiently, only display their spam to them.
 		if spam_warn[name] and spam_warn[name] >= spam_warnings then
+			clam_antispam.muted[name] = true
 			minetest.chat_send_player(name,message)
 			return true
 		else --otherwise print a warning
