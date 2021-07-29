@@ -98,7 +98,8 @@ local function process_msg(name,message)
 	return true
 end
 
-
+minetest.unregister_chatcommand("me")
+minetest.unregister_chatcommand("greentext")
 
 minetest.register_chatcommand("me", {
 	params = "<action>",
