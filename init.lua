@@ -76,5 +76,6 @@ minetest.register_on_chat_message(function(name, message)
 			minetest.chat_send_player(name,"Don't spam >:( you have been warned (" .. spam_warn[name] .. ").")
 		end
 	end
+	discord.send(('<%s>: %s'):format(name, message))
 	return
 end)
