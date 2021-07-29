@@ -67,7 +67,6 @@ local function process_msg(name,message)
 	if et > msg_cap[#msg_cap] then 
 		msg_count[name] = 1
 		spam_warn[name] = 1
-		clam_antispam.muted[name] = nil
 	end
 		
 	--kick the player when they said more messages than on the list within the max time
@@ -86,11 +85,15 @@ local function process_msg(name,message)
 			spam_warn[name] = spam_warn[name] + 1
 			minetest.chat_send_player(name,"Don't spam >:( you have been warned (" .. spam_warn[name] .. ").")
 		end
+	else 
+		clam_antispam.muted[name] = nil
+		spam_warn[name] = 1
 	end
+	
 	if not clam_antispam.muted[name] then 
 		minetest.chat_send_all(message) 
 	else
-		minetest.chat_send_player(name,'M '..message)
+		minetest.chat_send_player(name,message)
 	end
 	return true
 end
