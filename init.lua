@@ -125,3 +125,11 @@ minetest.register_chatcommand("greentext", {
 minetest.register_on_chat_message(function(name, message)
 	return process_msg(name,'<'..name..'> '..message)
 end)
+
+minetest.register_on_leaveplayer(function(lp, timed_out) 
+	local name=lp:get_player_name()
+	msg_count[name] = nil
+	spam_warn[name] = nil
+	first_msg[name] = nil
+	clam_antispam.muted[name] = nil
+end)
