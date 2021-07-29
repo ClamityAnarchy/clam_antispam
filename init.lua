@@ -45,12 +45,23 @@ local msg_cap = {
 	[32]=588,
 	[33]=592
 }
-
+--[[] debug
+msg_cap = {
+	[1]=0,
+	[2]=0,
+	[3]=6,
+	[4]=6,
+	[5]=6,
+	[6]=6,
+	[7]=6,
+	[8]=6,
+	[9]=10
+}--]]
 local function process_msg(name,message)
 	if msg_count[name] == nil then msg_count[name] = 0 end
-	if msg_count[name] == 0 then first_msg[name] = os.time() end
-	msg_count[name] = msg_count[name] + 1
+	if msg_count[name] <= 1 then first_msg[name] = os.time() end
 	local et=os.time() - first_msg[name] --elapsed time
+	msg_count[name] = msg_count[name] + 1
 	
 	--restart the "loop" when the time hits the largest value from the list	
 	if et > msg_cap[#msg_cap] then 
@@ -62,25 +73,25 @@ local function process_msg(name,message)
 	--kick the player when they said more messages than on the list within the max time
 	if msg_cap[msg_count[name]] == nil then 
 		if msg_count[name] > #msg_cap then  minetest.kick_player(name, "You talk too much") end
+		msg_count[name] = math.random(spam_warnings,msg_cap[#msg_cap])
 		return true
 	end
 	
-	
 	if et < msg_cap[msg_count[name]] then --spam detected
-		if not spam_warn[name] then spam_warn[name]=0 end		
-		
+		if not spam_warn[name] then spam_warn[name]=1 end		
 		 --if the player has been warned sufficiently, only display their spam to them.
 		if spam_warn[name] and spam_warn[name] >= spam_warnings then
 			clam_antispam.muted[name] = true
-			minetest.chat_send_player(name,message)
-			return true
 		else --otherwise print a warning
 			spam_warn[name] = spam_warn[name] + 1
 			minetest.chat_send_player(name,"Don't spam >:( you have been warned (" .. spam_warn[name] .. ").")
 		end
 	end
-	--discord.send(('<%s>: %s'):format(name, message))
-	minetest.chat_send_all(message)
+	if not clam_antispam.muted[name] then 
+		minetest.chat_send_all(message) 
+	else
+		minetest.chat_send_player(name,'M '..message)
+	end
 	return true
 end
 
