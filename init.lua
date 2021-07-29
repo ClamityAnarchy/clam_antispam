@@ -72,7 +72,7 @@ local function process_msg(name,message)
 	--kick the player when they said more messages than on the list within the max time
 	if msg_cap[msg_count[name]] == nil then 
 		if msg_count[name] > #msg_cap then  minetest.kick_player(name, "You talk too much") end
-		msg_count[name] = math.random(spam_warnings,msg_cap[#msg_cap])
+		msg_count[name] = math.random(3,msg_cap[#msg_cap]) --set the counter to a random position to make it less predictable
 		return true
 	end
 	
