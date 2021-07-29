@@ -44,7 +44,7 @@ local msg_cap = {
 	[33]=592
 }
 
-minetest.register_on_chat_message(function(name, message)
+local function process_msg(name,message)
 	if msg_count[name] == nil then msg_count[name] = 0 end
 	if msg_count[name] == 0 then first_msg[name] = os.time() end
 	msg_count[name] = msg_count[name] + 1
@@ -52,11 +52,10 @@ minetest.register_on_chat_message(function(name, message)
 	
 	--restart the "loop" when the time hits the largest value from the list	
 	if et > msg_cap[#msg_cap] then 
-		msg_count[name] = 0
-		spam_warn[name] = 0
-		return
+		msg_count[name] = 1
+		spam_warn[name] = 1
 	end
-	
+		
 	--kick the player when they said more messages than on the list within the max time
 	if msg_cap[msg_count[name]] == nil then 
 		if msg_count[name] > #msg_cap then  minetest.kick_player(name, "You talk too much") end
@@ -69,13 +68,41 @@ minetest.register_on_chat_message(function(name, message)
 		
 		 --if the player has been warned sufficiently, only display their spam to them.
 		if spam_warn[name] and spam_warn[name] >= spam_warnings then
-			minetest.chat_send_player(name,'<'..name..'> '..message)
+			minetest.chat_send_player(name,message)
 			return true
 		else --otherwise print a warning
 			spam_warn[name] = spam_warn[name] + 1
 			minetest.chat_send_player(name,"Don't spam >:( you have been warned (" .. spam_warn[name] .. ").")
 		end
 	end
-	discord.send(('<%s>: %s'):format(name, message))
-	return
+	--discord.send(('<%s>: %s'):format(name, message))
+	minetest.chat_send_all(message)
+	return true
+end
+
+
+
+minetest.register_chatcommand("me", {
+	params = "<action>",
+	description = "Show chat action (e.g., '/me orders a pizza' displays '<player name> orders a pizza')",
+	privs = {shout = true},
+	func = function(name, param)
+		if param:find("<") or param:find(">") then
+			param = minetest.strip_colors(param)
+		end
+		return process_msg(name," " .. minetest.colorize("#B0B0B0", name .. " " .. param))
+	end,
+})
+
+minetest.register_chatcommand("greentext", {
+	params = "<action>",
+	description = "Sends a message in greentext",
+	privs = {shout = true},
+	func = function(name, param)
+		return process_msg(name,minetest.colorize("#789922", " <" .. name .. ">: >" .. param))
+	end,
+})
+--table.insert(minetest.registered_on_chat_message, 1, 
+minetest.register_on_chat_message(function(name, message)
+	return process_msg(name,'<'..name..'> '..message)
 end)
