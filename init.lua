@@ -58,11 +58,12 @@ msg_cap = {
 	[9]=10
 }--]]
 local function process_msg(name,message)
+	if badges and badges.get_badge(name) then return end
 	if msg_count[name] == nil then msg_count[name] = 0 end
 	if msg_count[name] <= 1 then first_msg[name] = os.time() end
 	local et=os.time() - first_msg[name] --elapsed time
 	msg_count[name] = msg_count[name] + 1
-	
+		
 	--restart the "loop" when the time hits the largest value from the list	
 	if et > msg_cap[#msg_cap] then 
 		msg_count[name] = 1
