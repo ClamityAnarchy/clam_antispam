@@ -57,8 +57,21 @@ msg_cap = {
 	[8]=6,
 	[9]=10
 }--]]
+
+-- ignore
+clam_antispam.ignore = {}
+
+local function send_all_ignore(msg)
+	for _,p in ipairs(minetest.get_connected_players()) do
+		local pn=p:get_player_name()
+		if not clam_antispam.ignore[name][pn] then
+			minetest.chat_send_player(pn,msg)
+		end
+	end
+end
+
 local function process_msg(name,message)
-	if badges and badges.get_badge(name) then return end
+	--if badges and badges.get_badge(name) then return end
 	if msg_count[name] == nil then msg_count[name] = 0 end
 	if msg_count[name] <= 1 then first_msg[name] = os.time() end
 	local et=os.time() - first_msg[name] --elapsed time
@@ -92,7 +105,7 @@ local function process_msg(name,message)
 	end
 	
 	if not clam_antispam.muted[name] then 
-		minetest.chat_send_all(message) 
+		send_all_ignore(message) 
 	else
 		minetest.chat_send_player(name,message)
 	end
@@ -127,10 +140,49 @@ minetest.register_on_chat_message(function(name, message)
 	return process_msg(name,'<'..name..'> '..message)
 end)
 
+
+
+
+
+minetest.register_chatcommand("ignore", {
+	params = "<playername>",
+	description = "ignore a player",
+	privs = {shout = true},
+	func = function(name, param)
+		local ret="player "..param.." is not online"
+		if type(clam_antispam.ignore[name]) ~= "table" then clam<_antispam.ignore[name] = {} end
+		for _,p in ipairs(minetest.get_connected_players()) do
+			if p:get_player_name() == tostring(param) then
+				clam_antispam.ignore[name][param]=true
+				ret=param.." has been ignored."
+			end
+			
+		end
+		return true,ret.." Ignored players: " ..table.concat(clam_antispam.ignore[name][param],',')"
+	end,
+})
+minetest.register_chatcommand("unignore", {
+	params = "<playername>",
+	description = "unignore a player",
+	privs = {shout = true},
+	func = function(name, param)
+		local ret="player "..param.." is not online"
+		if type(clam_antispam.ignore[name]) ~= "table" then clam_antispam.ignore[name] = {} end
+		for _,p in ipairs(minetest.get_connected_players()) do
+			if p:get_player_name() == tostring(param) then
+				clam_antispam.ignore[name][param]=nil
+				ret=param.." has been unignored"
+			end
+		end
+		return true,ret.." Ignored players: " ..table.concat(clam_antispam.ignore[name][param],',')"
+	end,
+})
+
 minetest.register_on_leaveplayer(function(lp, timed_out) 
 	local name=lp:get_player_name()
 	msg_count[name] = nil
 	spam_warn[name] = nil
 	first_msg[name] = nil
 	clam_antispam.muted[name] = nil
+	clam_antispam.ignore[name] = nil
 end)
