@@ -70,8 +70,16 @@ local function send_all_ignore(name,msg)
 	end
 end
 
-local function process_msg(name,message)
-	--if badges and badges.get_badge(name) then return end
+local function process_msg(name,message,bycmd)
+	
+	if badges and badges.get_badge(name) then 
+		if bycmd then
+			return minetest.chat_send_all(message)
+		end
+		return badges.chat_send(name, message)
+	end
+	
+	
 	if msg_count[name] == nil then msg_count[name] = 0 end
 	if msg_count[name] <= 1 then first_msg[name] = os.time() end
 	local et=os.time() - first_msg[name] --elapsed time
@@ -123,7 +131,7 @@ minetest.register_chatcommand("me", {
 		if param:find("<") or param:find(">") then
 			param = minetest.strip_colors(param)
 		end
-		return process_msg(name," " .. minetest.colorize("#B0B0B0", name .. " " .. param))
+		return process_msg(name," " .. minetest.colorize("#B0B0B0", name .. " " .. param),true)
 	end,
 })
 
@@ -132,7 +140,7 @@ minetest.register_chatcommand("greentext", {
 	description = "Sends a message in greentext",
 	privs = {shout = true},
 	func = function(name, param)
-		return process_msg(name,minetest.colorize("#789922", " <" .. name .. ">: >" .. param))
+		return process_msg(name,minetest.colorize("#789922", " <" .. name .. ">: >" .. param),true)
 	end,
 })
 --table.insert(minetest.registered_on_chat_message, 1, 
