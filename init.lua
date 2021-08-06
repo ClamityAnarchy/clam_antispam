@@ -185,7 +185,6 @@ local function get_ignores(name)
 	local r={}
 	for k,v in pairs(clam_antispam.ignore[name]) do
 		if v then table.insert(r,k) end
-		minetest.chat_send_all(k)
 	end
 	return r
 end
