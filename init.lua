@@ -194,7 +194,7 @@ local function get_ignorers(name)
 	for p,l in pairs(clam_antispam.ignore) do
 		for pp,st in pairs(l) do
 			if name == pp then
-				table.insert(r,pp)
+				table.insert(r,p)
 			end
 		end
 	end
