@@ -230,3 +230,9 @@ minetest.register_chatcommand("ignore", {
 		return false,"Player "..param.." not online. "..print_ignores(name)
 	end,
 })
+
+minetest.register_chatcommand("ignorestats", {
+	description = "Show who you ignore and who ignores you.",
+	privs = {shout = true},
+	func = function(name) return true,print_ignores(name) end,
+})
