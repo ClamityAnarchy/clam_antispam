@@ -7,6 +7,7 @@ local first_msg = {}
 local spam_warn = {}
 clam_antispam = {}
 clam_antispam.muted = {}
+clam_antispam.ignore = {}
 
 
 --This is a statistic generated from historic clamity chat. the key is the amount of messages and the value is the shortest time anyone has taken to say that many messages ( this list was provided by anon5 )
@@ -57,12 +58,46 @@ msg_cap = {
 	[8]=6,
 	[9]=10
 }--]]
-local function process_msg(name,message)
+
+
+
+local function send_all_ignore(name,msg)
+	for _,p in ipairs(minetest.get_connected_players()) do
+		local pn=p:get_player_name()
+		if not clam_antispam.ignore[pn][name] then
+			minetest.chat_send_player(pn,msg)
+		end
+	end
+end
+
+local function send_ply_ignore(name,msg,recv)
+	if not clam_antispam.ignore[recv][name] then
+			minetest.chat_send_player(recv,msg)
+	end
+end
+
+local function player_online(name)
+	for _,p in ipairs(minetest.get_connected_players()) do
+		if p:get_player_name() == name then return true end
+	end
+end
+
+
+local function process_msg(name,message,bycmd,recv)
+	
+	if badges and badges.get_badge(name) then 
+		if bycmd then
+			return minetest.chat_send_all(message)
+		end
+		return badges.chat_send(name, message)
+	end
+	
+	
 	if msg_count[name] == nil then msg_count[name] = 0 end
 	if msg_count[name] <= 1 then first_msg[name] = os.time() end
 	local et=os.time() - first_msg[name] --elapsed time
 	msg_count[name] = msg_count[name] + 1
-	
+		
 	--restart the "loop" when the time hits the largest value from the list	
 	if et > msg_cap[#msg_cap] then 
 		msg_count[name] = 1
@@ -90,15 +125,20 @@ local function process_msg(name,message)
 		spam_warn[name] = 1
 	end
 	
-	if not clam_antispam.muted[name] then 
-		minetest.chat_send_all(message) 
+	if not clam_antispam.muted[name] then
+		if recv and player_online(recv) then
+			send_ply_ignore(name,message,recv)
+		else
+			send_all_ignore(name,message) 
+		end
 	else
-		minetest.chat_send_player(name,message)
+		send_ply_ignore(name,message,name)
 	end
 	return true
 end
 
 minetest.unregister_chatcommand("me")
+minetest.unregister_chatcommand("msg")
 minetest.unregister_chatcommand("greentext")
 
 minetest.register_chatcommand("me", {
@@ -109,7 +149,7 @@ minetest.register_chatcommand("me", {
 		if param:find("<") or param:find(">") then
 			param = minetest.strip_colors(param)
 		end
-		return process_msg(name," " .. minetest.colorize("#B0B0B0", name .. " " .. param))
+		return process_msg(name," " .. minetest.colorize("#B0B0B0", name .. " " .. param),true)
 	end,
 })
 
@@ -118,12 +158,32 @@ minetest.register_chatcommand("greentext", {
 	description = "Sends a message in greentext",
 	privs = {shout = true},
 	func = function(name, param)
-		return process_msg(name,minetest.colorize("#789922", " <" .. name .. ">: >" .. param))
+		return process_msg(name,minetest.colorize("#789922", " <" .. name .. ">: >" .. param),true)
 	end,
 })
---table.insert(minetest.registered_on_chat_message, 1, 
+minetest.register_chatcommand("msg", {
+	params = "<name> <message>",
+	description = "Send a direct message to a player",
+	privs = {shout=true},
+	func = function(name, param)
+		local sendto, message = param:match("^(%S+)%s(.+)$")
+		if not sendto then
+			return false, "Invalid usage, see /help msg."
+		end
+		if not core.get_player_by_name(sendto) then
+			return false, "The player " .. sendto
+					.. " is not online."
+		end
+		core.log("action", "DM from " .. name .. " to " .. sendto
+				.. ": " .. message)
+		process_msg(name, "DM from " .. name .. ": "
+				.. message,true,sendto)
+		return true, "DM to "..sendto..": "..message
+	end,
+})
+
 minetest.register_on_chat_message(function(name, message)
-	return process_msg(name,'<'..name..'> '..message)
+	return process_msg(name,'<'..name..'>: '..message)
 end)
 
 minetest.register_on_leaveplayer(function(lp, timed_out) 
@@ -133,3 +193,87 @@ minetest.register_on_leaveplayer(function(lp, timed_out)
 	first_msg[name] = nil
 	clam_antispam.muted[name] = nil
 end)
+
+
+-- IGNORE
+
+minetest.register_on_joinplayer(function(lp, timed_out) 
+	local name=lp:get_player_name()
+	clam_antispam.ignore[name] = {}
+end)
+
+minetest.register_on_leaveplayer(function(lp, timed_out) 
+	local name=lp:get_player_name()
+	clam_antispam.ignore[name] = nil
+end)
+
+
+local function ignore_player(name,igname)
+	if player_online(igname) then
+		clam_antispam.ignore[name][igname] = true
+		return true
+	end
+end
+
+local function unignore_player(name,igname)
+	 if clam_antispam.ignore[name][igname] then 
+		clam_antispam.ignore[name][igname] = nil
+		return true
+	end
+end
+
+local function get_ignores(name)
+	local r={}
+	for k,v in pairs(clam_antispam.ignore[name]) do
+		if v then table.insert(r,k) end
+	end
+	return r
+end
+
+local function get_ignorers(name)
+	local r={}
+	for p,l in pairs(clam_antispam.ignore) do
+		for pp,st in pairs(l) do
+			if name == pp then
+				table.insert(r,p)
+			end
+		end
+	end
+	return r
+end
+
+local function print_ignores(name)
+	return "Ignored players: "..table.concat(get_ignores(name),',')..". These players are ignoring you: "..table.concat(get_ignorers(name))
+end
+
+minetest.register_chatcommand("unignore", {
+	params = "<playername>",
+	description = "Unignore a player",
+	privs = {shout = true},
+	func = function(name, param)
+		param=tostring(param)
+		if unignore_player(name,param) then
+			return true, "Player "..param.." unignored. "..print_ignores(name)
+		end
+		return false,"Player "..param.." not on ignorelist. "..print_ignores(name)
+	end,
+})
+
+minetest.register_chatcommand("ignore", {
+	params = "<playername>",
+	description = "Ignore a player",
+	privs = {shout = true},
+	func = function(name, param)
+		param=tostring(param)
+		if ignore_player(name,param) then
+			return true, "Player "..param.." ignored. "..print_ignores(name)
+		end
+		return false,"Player "..param.." not online. "..print_ignores(name)
+	end,
+})
+
+minetest.register_chatcommand("ignorestats", {
+	description = "Show who you ignore and who ignores you.",
+	privs = {shout = true},
+	func = function(name) return true,print_ignores(name) end,
+})
