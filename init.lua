@@ -70,7 +70,20 @@ local function send_all_ignore(name,msg)
 	end
 end
 
-local function process_msg(name,message,bycmd)
+local function send_ply_ignore(name,msg,recv)
+	if not clam_antispam.ignore[recv][name] then
+			minetest.chat_send_player(recv,msg)
+	end
+end
+
+local function player_online(name)
+	for _,p in ipairs(minetest.get_connected_players()) do
+		if p:get_player_name() == name then return true end
+	end
+end
+
+
+local function process_msg(name,message,bycmd,recv)
 	
 	if badges and badges.get_badge(name) then 
 		if bycmd then
@@ -112,8 +125,12 @@ local function process_msg(name,message,bycmd)
 		spam_warn[name] = 1
 	end
 	
-	if not clam_antispam.muted[name] then 
-		send_all_ignore(name,message) 
+	if not clam_antispam.muted[name] then
+		if recv and player_online(recv) then
+			send_ply_ignore(name,message,recv)
+		else
+			send_all_ignore(name,message) 
+		end
 	else
 		minetest.chat_send_player(name,message)
 	end
@@ -121,6 +138,7 @@ local function process_msg(name,message,bycmd)
 end
 
 minetest.unregister_chatcommand("me")
+minetest.unregister_chatcommand("msg")
 minetest.unregister_chatcommand("greentext")
 
 minetest.register_chatcommand("me", {
@@ -141,6 +159,26 @@ minetest.register_chatcommand("greentext", {
 	privs = {shout = true},
 	func = function(name, param)
 		return process_msg(name,minetest.colorize("#789922", " <" .. name .. ">: >" .. param),true)
+	end,
+})
+minetest.register_chatcommand("msg", {
+	params = "<name> <message>",
+	description = "Send a direct message to a player",
+	privs = {shout=true},
+	func = function(name, param)
+		local sendto, message = param:match("^(%S+)%s(.+)$")
+		if not sendto then
+			return false, "Invalid usage, see /help msg."
+		end
+		if not core.get_player_by_name(sendto) then
+			return false, "The player " .. sendto
+					.. " is not online."
+		end
+		core.log("action", "DM from " .. name .. " to " .. sendto
+				.. ": " .. message)
+		process_msg(name, "DM from " .. name .. ": "
+				.. message,true,sendto)
+		return true, "DM to "..sendto..": "..message
 	end,
 })
 --table.insert(minetest.registered_on_chat_message, 1, 
@@ -169,11 +207,6 @@ minetest.register_on_leaveplayer(function(lp, timed_out)
 	clam_antispam.ignore[name] = nil
 end)
 
-local function player_online(name)
-	for _,p in ipairs(minetest.get_connected_players()) do
-		if p:get_player_name() == name then return true end
-	end
-end
 
 local function ignore_player(name,igname)
 	if player_online(igname) then
