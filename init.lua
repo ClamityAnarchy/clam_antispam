@@ -132,7 +132,7 @@ local function process_msg(name,message,bycmd,recv)
 			send_all_ignore(name,message) 
 		end
 	else
-		minetest.chat_send_player(name,message)
+		send_ply_ignore(name,message,name)
 	end
 	return true
 end
