@@ -181,7 +181,7 @@ minetest.register_chatcommand("msg", {
 		return true, "DM to "..sendto..": "..message
 	end,
 })
---table.insert(minetest.registered_on_chat_message, 1, 
+
 minetest.register_on_chat_message(function(name, message)
 	return process_msg(name,'<'..name..'> '..message)
 end)
