@@ -85,13 +85,18 @@ end
 
 local function process_msg(name,message,bycmd,recv)
 	
+	if not core.get_player_by_name(name) then return end
+	
 	if badges and badges.get_badge(name) then 
 		if bycmd then
-			return minetest.chat_send_all(message)
+			if not recv then
+				return minetest.chat_send_all(message)
+			else
+				return minetest.chat_send_player(recv,message)
+			end
 		end
 		return badges.chat_send(name, message)
 	end
-	
 	
 	if msg_count[name] == nil then msg_count[name] = 0 end
 	if msg_count[name] <= 1 then first_msg[name] = os.time() end
@@ -129,6 +134,7 @@ local function process_msg(name,message,bycmd,recv)
 		if recv and player_online(recv) then
 			send_ply_ignore(name,message,recv)
 		else
+			message = '<'..name..'>: '..message
 			send_all_ignore(name,message) 
 		end
 	else
@@ -176,14 +182,13 @@ minetest.register_chatcommand("msg", {
 		end
 		core.log("action", "DM from " .. name .. " to " .. sendto
 				.. ": " .. message)
-		process_msg(name, "DM from " .. name .. ": "
-				.. message,true,sendto)
+		process_msg(name, "DM from " .. name .. ": ".. message,true,sendto)
 		return true, "DM to "..sendto..": "..message
 	end,
 })
 
 minetest.register_on_chat_message(function(name, message)
-	return process_msg(name,'<'..name..'>: '..message)
+	return process_msg(name,message)
 end)
 
 minetest.register_on_leaveplayer(function(lp, timed_out) 
