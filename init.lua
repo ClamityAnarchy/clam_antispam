@@ -187,9 +187,7 @@ minetest.register_chatcommand("msg", {
 	end,
 })
 
-minetest.register_on_chat_message(function(name, message)
-	return process_msg(name,message)
-end)
+minetest.register_on_chat_message(process_msg)
 
 minetest.register_on_leaveplayer(function(lp, timed_out) 
 	local name=lp:get_player_name()
