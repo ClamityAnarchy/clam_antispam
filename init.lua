@@ -62,6 +62,7 @@ msg_cap = {
 
 
 local function send_all_ignore(name,msg)
+	if discord then discord.send(('<%s>: %s'):format(name, msg)) end
 	for _,p in ipairs(minetest.get_connected_players()) do
 		local pn=p:get_player_name()
 		if not clam_antispam.ignore[pn][name] then
@@ -90,11 +91,13 @@ local function process_msg(name,message,bycmd,recv)
 	if badges and badges.get_badge(name) then 
 		if bycmd then
 			if not recv then
+				if discord then discord.send(('<%s>: %s'):format(name, msg)) end
 				return minetest.chat_send_all(message)
 			else
 				return minetest.chat_send_player(recv,message)
 			end
 		end
+		if discord then discord.send(msg) end
 		return badges.chat_send(name, message)
 	end
 	
@@ -134,7 +137,7 @@ local function process_msg(name,message,bycmd,recv)
 		if recv and player_online(recv) then
 			send_ply_ignore(name,message,recv)
 		else
-			message = '<'..name..'>: '..message
+			message=('<%s>: %s'):format(name, message)
 			send_all_ignore(name,message) 
 		end
 	else
